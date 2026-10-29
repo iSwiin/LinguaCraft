@@ -1,0 +1,20 @@
+# API secrets
+.env
+**/.env
+
+# Python
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+
+# Java / Gradle
+.gradle/
+**/.gradle/
+**/build/
+**/run/
+
+# IDE settings
+.idea/
+**/.idea/
+*.iml
