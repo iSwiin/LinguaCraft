@@ -3,6 +3,9 @@ package com.lisa.linguacraft.client;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.lisa.linguacraft.Quest;
+import com.lisa.linguacraft.QuestManager;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -22,7 +25,9 @@ public class VillagerDialogueScreen extends Screen {
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
     private EditBox messageBox;
-    private String responseText = "こんにちは！日本語で話しましょう。";
+
+    private String responseText =
+            "こんにちは！日本語で話しましょう。";
 
     public VillagerDialogueScreen() {
         super(Component.literal("LinguaCraft - 日本語会話"));
@@ -60,6 +65,9 @@ public class VillagerDialogueScreen extends Screen {
             return;
         }
 
+        // Check whether this message completes the greeting quest.
+        boolean greetingQuestCompleted = checkGreetingQuest(message);
+
         responseText = "考え中... (Thinking)";
         messageBox.setValue("");
 
@@ -94,8 +102,51 @@ public class VillagerDialogueScreen extends Screen {
                         "Connection error: " + error.getMessage()
                 )
                 .thenAccept(reply ->
-                        Minecraft.getInstance().execute(() -> responseText = reply)
+                        Minecraft.getInstance().execute(() -> {
+                            responseText = reply;
+
+                            if (greetingQuestCompleted) {
+                                responseText +=
+                                        "\n\nQuest completed: A Friendly Greeting!";
+                            }
+                        })
                 );
+    }
+
+    private boolean checkGreetingQuest(String message) {
+
+        Quest quest = findQuest("greet_villager");
+
+        // The player must accept the quest first.
+        if (quest == null ||
+                quest.getStatus() != Quest.Status.ACTIVE) {
+            return false;
+        }
+
+        String normalized = message
+                .toLowerCase()
+                .replaceAll("\\s+", "");
+
+        boolean greetingDetected =
+                normalized.contains("こんにちは")
+                        || normalized.contains("こんにちわ")
+                        || normalized.contains("konnichiwa");
+
+        if (greetingDetected) {
+            return QuestManager.completeQuest("greet_villager");
+        }
+
+        return false;
+    }
+
+    private Quest findQuest(String id) {
+        for (Quest quest : QuestManager.getAllQuests()) {
+            if (quest.getId().equals(id)) {
+                return quest;
+            }
+        }
+
+        return null;
     }
 
     private String escapeJson(String text) {
@@ -130,7 +181,7 @@ public class VillagerDialogueScreen extends Screen {
 
         int responseY = this.height / 2 - 45;
 
-        for (int i = 0; i < Math.min(lines.size(), 5); i++) {
+        for (int i = 0; i < Math.min(lines.size(), 7); i++) {
             graphics.drawString(
                     this.font,
                     lines.get(i),
