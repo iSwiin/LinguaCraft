@@ -22,19 +22,27 @@ import java.util.List;
 
 public class VillagerDialogueScreen extends Screen {
 
-    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+    private static final HttpClient HTTP_CLIENT =
+            HttpClient.newHttpClient();
+
+    private final String villagerRole;
 
     private EditBox messageBox;
 
     private String responseText =
             "こんにちは！日本語で話しましょう。";
 
-    public VillagerDialogueScreen() {
-        super(Component.literal("LinguaCraft - 日本語会話"));
+    public VillagerDialogueScreen(String villagerRole) {
+        super(Component.literal(
+                "LinguaCraft - " + villagerRole
+        ));
+
+        this.villagerRole = villagerRole;
     }
 
     @Override
     protected void init() {
+
         int centerX = this.width / 2;
         int centerY = this.height / 2;
 
@@ -59,6 +67,7 @@ public class VillagerDialogueScreen extends Screen {
     }
 
     private void sendMessage() {
+
         String message = messageBox.getValue().trim();
 
         if (message.isEmpty()) {
@@ -66,29 +75,41 @@ public class VillagerDialogueScreen extends Screen {
         }
 
         // Check whether this message completes the greeting quest.
-        boolean greetingQuestCompleted = checkGreetingQuest(message);
+        boolean greetingQuestCompleted =
+                checkGreetingQuest(message);
 
         responseText = "考え中... (Thinking)";
         messageBox.setValue("");
 
-        String jsonBody = "{\"message\":\""
-                + escapeJson(message)
-                + "\",\"level\":\"beginner\"}";
+        // Build the request JSON.
+        JsonObject jsonBody = new JsonObject();
+
+        jsonBody.addProperty("message", message);
+        jsonBody.addProperty("level", "beginner");
+        jsonBody.addProperty("villager_role", villagerRole);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://127.0.0.1:8000/talk"))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .POST(
+                        HttpRequest.BodyPublishers.ofString(
+                                jsonBody.toString()
+                        )
+                )
                 .build();
 
         HTTP_CLIENT.sendAsync(
                         request,
-                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+                        HttpResponse.BodyHandlers.ofString(
+                                StandardCharsets.UTF_8
+                        )
                 )
                 .thenApply(httpResponse -> {
+
                     if (httpResponse.statusCode() != 200) {
                         throw new RuntimeException(
-                                "Backend returned HTTP " + httpResponse.statusCode()
+                                "Backend returned HTTP "
+                                        + httpResponse.statusCode()
                         );
                     }
 
@@ -103,6 +124,7 @@ public class VillagerDialogueScreen extends Screen {
                 )
                 .thenAccept(reply ->
                         Minecraft.getInstance().execute(() -> {
+
                             responseText = reply;
 
                             if (greetingQuestCompleted) {
@@ -140,22 +162,15 @@ public class VillagerDialogueScreen extends Screen {
     }
 
     private Quest findQuest(String id) {
+
         for (Quest quest : QuestManager.getAllQuests()) {
+
             if (quest.getId().equals(id)) {
                 return quest;
             }
         }
 
         return null;
-    }
-
-    private String escapeJson(String text) {
-        return text
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
     }
 
     @Override
@@ -165,23 +180,28 @@ public class VillagerDialogueScreen extends Screen {
             int mouseY,
             float partialTick
     ) {
+
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         graphics.drawCenteredString(
                 this.font,
-                "こんにちは！",
+                villagerRole,
                 this.width / 2,
                 this.height / 2 - 75,
-                0xFFFFFF
+                0xFFFF55
         );
 
         List<net.minecraft.util.FormattedCharSequence> lines =
-                this.font.split(Component.literal(responseText), 290);
+                this.font.split(
+                        Component.literal(responseText),
+                        290
+                );
 
         int responseY = this.height / 2 - 45;
 
         for (int i = 0; i < Math.min(lines.size(), 7); i++) {
+
             graphics.drawString(
                     this.font,
                     lines.get(i),
