@@ -12,16 +12,14 @@ public class QuestManager {
 
     static {
 
-        // ==========================================
-        // BAKER QUESTLINE
-        // ==========================================
+        // BAKER BRANCH
 
         quests.add(new Quest(
                 "baker_greeting",
-                "A Friendly Greeting",
-                "Introduce yourself to the village baker.",
+                "Basic Communication",
+                "Learn how to greet the village baker.",
                 Arrays.asList(
-                        "Learn the phrase こんにちは (Konnichiwa)",
+                        "Learn こんにちは (Konnichiwa)",
                         "Greet the baker in Japanese"
                 ),
                 "Japanese basics",
@@ -32,11 +30,11 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "baker_food",
-                "The Language of Food",
-                "Learn some useful Japanese food vocabulary.",
+                "Food Vocabulary",
+                "Discover the Japanese names for common foods.",
                 Arrays.asList(
-                        "Learn the word パン (Pan) - Bread",
-                        "Learn the word ケーキ (Keeki) - Cake"
+                        "Learn パン (Pan) - Bread",
+                        "Learn ケーキ (Keeki) - Cake"
                 ),
                 "Food vocabulary",
                 false,
@@ -46,11 +44,11 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "baker_order",
-                "One Bread, Please!",
-                "Practice ordering something from the baker.",
+                "Ordering Food",
+                "Learn how to politely order food.",
                 Arrays.asList(
                         "Learn パンをください (Pan o kudasai)",
-                        "Ask the baker for bread in Japanese"
+                        "Order bread from the baker"
                 ),
                 "Ordering vocabulary",
                 false,
@@ -60,27 +58,24 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "baker_ingredients",
-                "A Baker's Ingredients",
+                "Ingredients",
                 "Learn the names of ingredients used in baking.",
                 Arrays.asList(
-                        "Learn the word たまご (Tamago) - Egg",
-                        "Learn the word こむぎこ (Komugiko) - Flour"
+                        "Learn たまご (Tamago) - Egg",
+                        "Learn こむぎこ (Komugiko) - Flour"
                 ),
                 "Ingredient vocabulary",
                 false,
                 VillagerRole.BAKER,
-                "baker_order"
+                "baker_food"
         ));
 
-
-        // ==========================================
-        // CAFE OWNER QUESTLINE
-        // ==========================================
+        // CAFE OWNER BRANCH
 
         quests.add(new Quest(
                 "cafe_greeting",
-                "Welcome to the Cafe",
-                "Introduce yourself to the cafe owner.",
+                "Everyday Greetings",
+                "Practice greetings with the cafe owner.",
                 Arrays.asList(
                         "Learn こんにちは (Konnichiwa)",
                         "Greet the cafe owner in Japanese"
@@ -93,8 +88,8 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "cafe_drinks",
-                "Something to Drink",
-                "Learn the names of popular Japanese drinks.",
+                "Drinks Vocabulary",
+                "Discover the names of popular drinks.",
                 Arrays.asList(
                         "Learn コーヒー (Koohii) - Coffee",
                         "Learn おちゃ (Ocha) - Tea"
@@ -107,7 +102,7 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "cafe_order",
-                "I'd Like a Coffee!",
+                "Ordering Drinks",
                 "Practice ordering a drink politely.",
                 Arrays.asList(
                         "Learn コーヒーをください (Koohii o kudasai)",
@@ -121,26 +116,23 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "cafe_conversation",
-                "A Little Conversation",
-                "Practice having a simple conversation.",
+                "Everyday Conversation",
+                "Learn expressions for everyday interactions.",
                 Arrays.asList(
                         "Learn ありがとう (Arigatou) - Thank you",
                         "Thank the cafe owner in Japanese"
                 ),
-                "Everyday conversation",
+                "Conversation skills",
                 false,
                 VillagerRole.CAFE_OWNER,
-                "cafe_order"
+                "cafe_drinks"
         ));
 
-
-        // ==========================================
-        // FARMER QUESTLINE
-        // ==========================================
+        // FARMER BRANCH
 
         quests.add(new Quest(
                 "farmer_greeting",
-                "Hello, Farmer!",
+                "Meeting the Farmer",
                 "Introduce yourself to the village farmer.",
                 Arrays.asList(
                         "Learn こんにちは (Konnichiwa)",
@@ -154,7 +146,7 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "farmer_vegetables",
-                "What's Growing?",
+                "Vegetable Vocabulary",
                 "Learn the names of vegetables.",
                 Arrays.asList(
                         "Learn にんじん (Ninjin) - Carrot",
@@ -168,8 +160,8 @@ public class QuestManager {
 
         quests.add(new Quest(
                 "farmer_numbers",
-                "Counting the Harvest",
-                "Learn how to count quantities.",
+                "Numbers and Quantities",
+                "Learn how to count items and quantities.",
                 Arrays.asList(
                         "Learn いち (Ichi) - One",
                         "Learn に (Ni) - Two",
@@ -182,9 +174,23 @@ public class QuestManager {
         ));
 
         quests.add(new Quest(
+                "farmer_seasons",
+                "Seasons and Nature",
+                "Discover vocabulary about seasons and nature.",
+                Arrays.asList(
+                        "Learn はる (Haru) - Spring",
+                        "Learn なつ (Natsu) - Summer"
+                ),
+                "Nature vocabulary",
+                false,
+                VillagerRole.FARMER,
+                "farmer_vegetables"
+        ));
+
+        quests.add(new Quest(
                 "farmer_trade",
-                "The Harvest Trade",
-                "Practice discussing and trading crops.",
+                "Trading the Harvest",
+                "Use your vocabulary to trade crops.",
                 Arrays.asList(
                         "Learn やさい (Yasai) - Vegetables",
                         "Learn やさいをください (Yasai o kudasai)",
@@ -195,14 +201,24 @@ public class QuestManager {
                 VillagerRole.FARMER,
                 "farmer_numbers"
         ));
+
+        activateStartingQuests();
     }
 
-    // Return every quest.
+    private static void activateStartingQuests() {
+
+        for (Quest quest : quests) {
+
+            if (quest.getPrerequisiteQuestId() == null) {
+                quest.setStatus(Quest.Status.ACTIVE);
+            }
+        }
+    }
+
     public static List<Quest> getAllQuests() {
         return Collections.unmodifiableList(quests);
     }
 
-    // Return quests that are currently available.
     public static List<Quest> getAvailableQuests() {
 
         List<Quest> result = new ArrayList<>();
@@ -219,7 +235,6 @@ public class QuestManager {
         return result;
     }
 
-    // Return available quests belonging to one villager.
     public static List<Quest> getAvailableQuests(VillagerRole role) {
 
         List<Quest> result = new ArrayList<>();
@@ -234,7 +249,6 @@ public class QuestManager {
         return result;
     }
 
-    // Return active quests.
     public static List<Quest> getActiveQuests() {
 
         List<Quest> result = new ArrayList<>();
@@ -249,7 +263,6 @@ public class QuestManager {
         return result;
     }
 
-    // Return completed quests.
     public static List<Quest> getCompletedQuests() {
 
         List<Quest> result = new ArrayList<>();
@@ -264,7 +277,20 @@ public class QuestManager {
         return result;
     }
 
-    // Check whether a quest's prerequisite is completed.
+    public static List<Quest> getQuestsForRole(VillagerRole role) {
+
+        List<Quest> result = new ArrayList<>();
+
+        for (Quest quest : quests) {
+
+            if (quest.getVillagerRole() == role) {
+                result.add(quest);
+            }
+        }
+
+        return result;
+    }
+
     private static boolean isPrerequisiteCompleted(Quest quest) {
 
         String prerequisiteId = quest.getPrerequisiteQuestId();
@@ -279,7 +305,7 @@ public class QuestManager {
                 && prerequisite.getStatus() == Quest.Status.COMPLETED;
     }
 
-    // Accept an available quest.
+    // Compatibility method. Players do not need to accept quests manually.
     public static boolean acceptQuest(String questId) {
 
         Quest quest = findQuest(questId);
@@ -295,8 +321,10 @@ public class QuestManager {
         return true;
     }
 
-    // Complete an active quest and unlock the next quest.
-    public static boolean completeQuest(String questId) {
+    public static boolean completeObjective(
+            String questId,
+            int objectiveIndex
+    ) {
 
         Quest quest = findQuest(questId);
 
@@ -306,12 +334,46 @@ public class QuestManager {
             return false;
         }
 
-        quest.setStatus(Quest.Status.COMPLETED);
+        boolean changed = quest.completeObjective(objectiveIndex);
+
+        if (!changed) {
+            return false;
+        }
+
+        // Complete the quest only after every objective is finished.
+        if (quest.areAllObjectivesCompleted()) {
+            completeQuest(questId);
+        }
 
         return true;
     }
 
-    // Find a quest by ID.
+    public static boolean completeQuest(String questId) {
+
+        Quest quest = findQuest(questId);
+
+        if (quest == null
+                || quest.getStatus() != Quest.Status.ACTIVE
+                || !quest.areAllObjectivesCompleted()) {
+
+            return false;
+        }
+
+        quest.setStatus(Quest.Status.COMPLETED);
+
+        // Unlock every direct child.
+        for (Quest nextQuest : quests) {
+
+            if (questId.equals(nextQuest.getPrerequisiteQuestId())
+                    && nextQuest.getStatus() == Quest.Status.AVAILABLE) {
+
+                nextQuest.setStatus(Quest.Status.ACTIVE);
+            }
+        }
+
+        return true;
+    }
+
     public static Quest findQuest(String questId) {
 
         for (Quest quest : quests) {
@@ -324,7 +386,6 @@ public class QuestManager {
         return null;
     }
 
-    // Add an additional quest.
     public static void addQuest(Quest quest) {
 
         if (findQuest(quest.getId()) != null) {
@@ -332,5 +393,9 @@ public class QuestManager {
         }
 
         quests.add(quest);
+
+        if (quest.getPrerequisiteQuestId() == null) {
+            quest.setStatus(Quest.Status.ACTIVE);
+        }
     }
 }

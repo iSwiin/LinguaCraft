@@ -3,8 +3,10 @@ package com.lisa.linguacraft.client;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.lisa.linguacraft.Quest;
 import com.lisa.linguacraft.QuestManager;
+import com.lisa.linguacraft.VillagerRole;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,7 +20,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class VillagerDialogueScreen extends Screen {
 
@@ -60,9 +64,11 @@ public class VillagerDialogueScreen extends Screen {
 
         addRenderableWidget(
                 Button.builder(
-                        Component.literal("送信 (Send)"),
-                        button -> sendMessage()
-                ).bounds(centerX - 50, centerY + 75, 100, 20).build()
+                                Component.literal("送信 (Send)"),
+                                button -> sendMessage()
+                        )
+                        .bounds(centerX - 50, centerY + 75, 100, 20)
+                        .build()
         );
     }
 
@@ -74,14 +80,14 @@ public class VillagerDialogueScreen extends Screen {
             return;
         }
 
-        // Check whether this message completes the greeting quest.
-        boolean greetingQuestCompleted =
-                checkGreetingQuest(message);
+        // Check quest objectives locally.
+        List<String> progressMessages =
+                checkQuestProgress(message);
 
         responseText = "考え中... (Thinking)";
         messageBox.setValue("");
 
-        // Build the request JSON.
+        // Send the message to Meta AI.
         JsonObject jsonBody = new JsonObject();
 
         jsonBody.addProperty("message", message);
@@ -127,50 +133,226 @@ public class VillagerDialogueScreen extends Screen {
 
                             responseText = reply;
 
-                            if (greetingQuestCompleted) {
+                            if (!progressMessages.isEmpty()) {
+
+                                responseText += "\n\n";
+
+                                for (String progress : progressMessages) {
+                                    responseText += progress + "\n";
+                                }
+
                                 responseText +=
-                                        "\n\nQuest completed: A Friendly Greeting!";
+                                        "\nYour skill tree has been updated!";
                             }
                         })
                 );
     }
 
-    private boolean checkGreetingQuest(String message) {
+    private List<String> checkQuestProgress(String message) {
 
-        Quest quest = findQuest("greet_villager");
+        List<String> messages = new ArrayList<>();
 
-        // The player must accept the quest first.
-        if (quest == null ||
-                quest.getStatus() != Quest.Status.ACTIVE) {
+        String normalized = normalize(message);
+
+        VillagerRole role = getVillagerRole();
+
+        if (role == null) {
+            return messages;
+        }
+
+        for (Quest quest : QuestManager.getActiveQuests()) {
+
+            if (quest.getVillagerRole() != role) {
+                continue;
+            }
+
+            for (int i = 0; i < quest.getTotalObjectiveCount(); i++) {
+
+                if (quest.isObjectiveCompleted(i)) {
+                    continue;
+                }
+
+                if (!matchesObjective(
+                        quest.getId(),
+                        i,
+                        normalized
+                )) {
+                    continue;
+                }
+
+                boolean wasLastObjective =
+                        quest.getCompletedObjectiveCount()
+                                == quest.getTotalObjectiveCount() - 1;
+
+                boolean completed = QuestManager.completeObjective(
+                        quest.getId(),
+                        i
+                );
+
+                if (!completed) {
+                    continue;
+                }
+
+                String objective = quest.getObjectives().get(i);
+
+                messages.add("Objective completed: " + objective);
+
+                if (wasLastObjective
+                        && quest.getStatus() == Quest.Status.COMPLETED) {
+
+                    messages.add(
+                            "QUEST COMPLETED: " + quest.getTitle()
+                    );
+
+                    messages.add(
+                            "Reward: " + quest.getReward()
+                    );
+                }
+            }
+        }
+
+        return messages;
+    }
+
+    private boolean matchesObjective(
+            String questId,
+            int objectiveIndex,
+            String message
+    ) {
+
+        return switch (questId) {
+
+            // BAKER
+
+            case "baker_greeting",
+                 "cafe_greeting",
+                 "farmer_greeting" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"こんにちは", "こんにちわ", "konnichiwa"},
+                    new String[]{"こんにちは", "こんにちわ", "konnichiwa"}
+            );
+
+            case "baker_food" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"パン", "pan"},
+                    new String[]{"ケーキ", "keeki", "cake"}
+            );
+
+            case "baker_order" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"パンをください", "パンください", "panwokudasai"},
+                    new String[]{"パンをください", "パンください", "panwokudasai"}
+            );
+
+            case "baker_ingredients" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"たまご", "卵", "tamago"},
+                    new String[]{"こむぎこ", "小麦粉", "komugiko"}
+            );
+
+
+            // CAFE OWNER
+
+            case "cafe_drinks" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"コーヒー", "koohii", "coffee"},
+                    new String[]{"おちゃ", "お茶", "ocha"}
+            );
+
+            case "cafe_order" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"コーヒーをください", "コーヒーください", "koohiowokudasai"},
+                    new String[]{"コーヒーをください", "コーヒーください", "koohiowokudasai"}
+            );
+
+            case "cafe_conversation" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"ありがとう", "arigatou", "arigato"},
+                    new String[]{"ありがとう", "arigatou", "arigato"}
+            );
+
+
+            // FARMER
+
+            case "farmer_vegetables" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"にんじん", "人参", "ninjin"},
+                    new String[]{"じゃがいも", "ジャガイモ", "jagaimo"}
+            );
+
+            case "farmer_numbers" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"いち", "一", "ichi"},
+                    new String[]{"に", "二", "ni"},
+                    new String[]{"さん", "三", "san"}
+            );
+
+            case "farmer_seasons" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"はる", "春", "haru"},
+                    new String[]{"なつ", "夏", "natsu"}
+            );
+
+            case "farmer_trade" -> matches(
+                    objectiveIndex,
+                    message,
+                    new String[]{"やさい", "野菜", "yasai"},
+                    new String[]{"やさいをください", "yasaiwokudasai"},
+                    new String[]{"やさいをください", "yasaiwokudasai"}
+            );
+
+            default -> false;
+        };
+    }
+
+    // Checks the phrase list belonging to one objective.
+    private boolean matches(
+            int objectiveIndex,
+            String message,
+            String[]... objectivePhrases
+    ) {
+
+        if (objectiveIndex < 0
+                || objectiveIndex >= objectivePhrases.length) {
             return false;
         }
 
-        String normalized = message
-                .toLowerCase()
-                .replaceAll("\\s+", "");
+        for (String phrase : objectivePhrases[objectiveIndex]) {
 
-        boolean greetingDetected =
-                normalized.contains("こんにちは")
-                        || normalized.contains("こんにちわ")
-                        || normalized.contains("konnichiwa");
-
-        if (greetingDetected) {
-            return QuestManager.completeQuest("greet_villager");
+            if (message.contains(normalize(phrase))) {
+                return true;
+            }
         }
 
         return false;
     }
 
-    private Quest findQuest(String id) {
+    private String normalize(String message) {
 
-        for (Quest quest : QuestManager.getAllQuests()) {
+        return message
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", "")
+                .replaceAll("[。、！？!?,.]", "");
+    }
 
-            if (quest.getId().equals(id)) {
-                return quest;
-            }
-        }
+    private VillagerRole getVillagerRole() {
 
-        return null;
+        return switch (villagerRole) {
+            case "Baker" -> VillagerRole.BAKER;
+            case "Cafe Owner" -> VillagerRole.CAFE_OWNER;
+            case "Farmer" -> VillagerRole.FARMER;
+            default -> null;
+        };
     }
 
     @Override
